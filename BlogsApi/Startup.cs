@@ -1,19 +1,20 @@
+using BlogsApi.Configuration;
 using BlogsApi.Database;
 using BlogsApi.Helpers;
+using BlogsApi.IRepository;
+using BlogsApi.Repository;
+using BlogsApi.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Text;
 
 namespace BlogsApi
 {
@@ -39,6 +40,26 @@ namespace BlogsApi
             services.AddIdentity<AppUser, IdentityRole>()
             .AddEntityFrameworkStores<AppDbContext>();
 
+            //JWT SETTINGS
+            services.AddAuthentication(o =>
+            {
+                o.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                o.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+
+            }).AddJwtBearer(o =>
+            {
+                o.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidateAudience = true,
+                    ValidIssuer = Configuration.GetSection("JWT").GetSection("Issuer").Value,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration.GetSection("JWT").GetSection("Key").Value)),
+                    ValidAudience = Configuration.GetSection("JWT").GetSection("Audience").Value
+                };
+            });
+
             services.AddCors(o =>
             {
                 o.AddPolicy("AllowAll", builder =>
@@ -48,10 +69,21 @@ namespace BlogsApi
             });
             services.AddSwaggerGen(c =>
             {
-                c.SwaggerDoc("v1", new OpenApiInfo { Title = "BlogsApi", Version = "v1" });
+                c.SwaggerDoc("v1", new 
+                    OpenApiInfo { 
+                    Title = "BlogsApi", 
+                    Version = "v1" 
+                });
             });
 
-            services.AddControllers();
+            services.AddTransient<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<IAuthManager, AuthManager>();
+            services.AddAutoMapper(typeof(MapperIntializer));
+
+            services.AddControllers().AddNewtonsoftJson(
+                o =>
+                o.SerializerSettings.ReferenceLoopHandling =
+                Newtonsoft.Json.ReferenceLoopHandling.Ignore);
         }
 
         // This method gets called by the runtime.
