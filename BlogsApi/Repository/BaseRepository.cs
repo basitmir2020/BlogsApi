@@ -31,6 +31,17 @@ namespace BlogsApi.Repository
             _dbSet.RemoveRange(entities);
         }
 
+        public bool ExistAsync(Expression<Func<T, bool>> expression)
+        {
+            if (_dbSet.FirstOrDefaultAsync(expression) == null)
+            {
+                return true;
+            }
+            else{
+                return false;
+            }
+        }
+
         public async Task<IList<T>> GetAllAsync(Expression<Func<T, bool>> expression = null, Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null, List<string> includes = null)
         {
             IQueryable<T> query = _dbSet;

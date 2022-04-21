@@ -16,6 +16,7 @@ namespace BlogsApi.IRepository
         Task InsertAsync(T entity);
         Task InsertRangeAsync(IEnumerable<T> entities);
         Task DeleteAsync(int id);
+        bool ExistAsync(Expression<Func<T, bool>> expression);
         void DeleteRangeAsync(IEnumerable<T> entities);
         void UpdateAsync(T entity);
     }

@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using BlogsApi.Data.Enum;
+using BlogsApi.Data.Response;
 using BlogsApi.Dtos;
 using BlogsApi.Helpers;
 using BlogsApi.Services;
@@ -6,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace BlogsApi.Controllers
@@ -40,7 +43,7 @@ namespace BlogsApi.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(new ResponseModel(ResponseCode.Error,"Not Registered",ModelState));
             }
 
             var user  = _mapper.Map<AppUser>(userDTOS);
@@ -50,13 +53,9 @@ namespace BlogsApi.Controllers
 
             if (!result.Succeeded)
             {
-                foreach(var error in result.Errors)
-                {
-                    ModelState.AddModelError(error.Code, error.Description);
-                }
-                return BadRequest(ModelState);
+                return BadRequest(new ResponseModel(ResponseCode.Error,"",result.Errors.Select(x=>x.Description).ToArray()));
             }
-            return Accepted();
+            return Accepted(new ResponseModel(ResponseCode.Ok,"User Registered",null));
         }
 
         [Route("Login")]
@@ -65,14 +64,14 @@ namespace BlogsApi.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(new ResponseModel(ResponseCode.Error,"Login Error", ModelState));
             }
 
             if(!await _authManager.ValidateUser(userDTOS))
             {
-                return Unauthorized();
+                return Unauthorized(new ResponseModel(ResponseCode.Error,"User Not Registered",null));
             }
-            return Accepted(new {Token = await _authManager.CreateToken()});
+            return Accepted(new ResponseModel(ResponseCode.Ok,"Token", new { Token = await _authManager.CreateToken()}));
         }
     }
 }
